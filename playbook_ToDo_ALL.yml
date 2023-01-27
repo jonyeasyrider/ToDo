@@ -1,0 +1,92 @@
+---
+- hosts: virtualmachines
+  remote_user: root
+  become: true
+  vars:
+    default_container_name: getting-started
+    default_container_image: jonyeasyrider/getting-started
+    docker_volume: todo-mysql-data
+    docker_network: todo-app
+    db_name: todos
+
+  tasks:
+    - name: Install aptitude
+      apt:
+        name: aptitude
+        state: latest
+        update_cache: true
+
+    - name: Install required system packages
+      apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - python3-pip
+          - virtualenv
+          - python3-setuptools
+        state: latest
+        update_cache: true
+
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu focal stable
+        state: present
+
+    - name: Update apt and install docker-ce
+      apt:
+        name: docker-ce
+        state: latest
+        update_cache: true
+        
+    - name: Install docker-compose      
+      get_url:      
+        url: https://github.com/docker/compose/releases/download/1.29.2/docker-compose-Linux-x86_64        
+        dest: /usr/local/bin/docker-compose        
+        mode: '755'
+            
+    - name: Install Docker Module for Python
+      pip:
+        name: docker
+    
+    - name: Add "root" user to "docker" group
+      remote_user: root
+      user:
+        name: root
+        groups: docker
+        append: yes
+        
+    - name: Create a network
+      docker_network:
+        name: "{{ docker_network }}"
+        
+    - name: Pull default Docker image
+      docker_container:
+        name: "{{ default_container_name }}"
+        state: started
+        image: "{{ default_container_image }}"
+        pull: true
+        ports:
+          - "3000:3000"
+        
+    - name: "Launch database container"
+      docker_container:
+        name: "{{ db_name }}"
+        image: mysql:8.0
+        volumes:
+          - "{{ docker_volume }}:/var/lib/mysql:rw"
+        restart: true
+        networks:
+          - name: "{{ docker_network }}"
+        env:
+          MYSQL_ROOT_PASSWORD: secret
+          MYSQL_DATABASE: todos
+          MYSQL_USER: root
+          MYSQL_PASSWORD: secret
+        
