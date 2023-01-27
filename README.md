@@ -15,7 +15,7 @@ This project has a docker-compose.yml file, which will start the mkdocs applicat
 
 This application was deployed on the remote machine by creating SSH keys and using "ansible-playbook -i inventory.yaml playbook_ToDo_ALL.yml" which files are attached in the repository. 
 
-As an improvement it should be modified the usage from root to other user.
+As an improvement it should be modified the usage from root to some other user.
 
 Contributing
 ------------
